@@ -2,5 +2,5 @@
 
 ```bash
 $ git tag x.x.x
-$ git push origin --tags
+$ git push --tags
 ```
