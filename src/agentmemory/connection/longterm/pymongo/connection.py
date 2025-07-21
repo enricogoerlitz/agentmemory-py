@@ -18,11 +18,7 @@ from agentmemory.connection.longterm.collections import Collection
 
 
 class MongoDBConnection(LongtermMemoryConnectionInterface):
-    def __init__(
-            self,
-            mongo_uri: str,
-            database: str
-    ):
+    def __init__(self, mongo_uri: str, database: str):
         self._uri = mongo_uri
         self._client = MongoClient(mongo_uri)
         self._db = self._client[database]
@@ -54,25 +50,16 @@ class MongoDBConnection(LongtermMemoryConnectionInterface):
         if self._db is None:
             raise ValueError("self._db is None")
 
-        self._db[Collection.CONVERSATIONS].create_indexes(
-            indexes=conversation_indexes()
-        )
+        collections = [
+            (Collection.CONVERSATIONS, conversation_indexes()),
+            (Collection.CONVERSATION_ITEMS, conversation_item_indexes()),
+            (Collection.PERSONAS, persona_indexes()),
+            (Collection.WORKFLOWS, workflow_indexes()),
+            (Collection.WORKFLOW_STEPS, workflow_step_indexes()),
+        ]
 
-        self._db[Collection.CONVERSATION_ITEMS].create_indexes(
-            indexes=conversation_item_indexes()
-        )
-
-        self._db[Collection.PERSONAS].create_indexes(
-            indexes=persona_indexes()
-        )
-
-        self._db[Collection.WORKFLOWS].create_indexes(
-            indexes=workflow_indexes()
-        )
-
-        self._db[Collection.WORKFLOW_STEPS].create_indexes(
-            indexes=workflow_step_indexes()
-        )
+        for name, indexes in collections:
+            self._db[name].create_indexes(indexes=indexes)
 
 
 def conversation_indexes() -> list[IndexModel]:
@@ -85,7 +72,7 @@ def conversation_indexes() -> list[IndexModel]:
         IndexModel(
             [("created_at", DESCENDING)],
             name="idx_created_at_desc"
-        )
+        ),
     ]
 
 
@@ -99,7 +86,7 @@ def conversation_item_indexes() -> list[IndexModel]:
         IndexModel(
             [("conversation_id", ASCENDING), ("created_at", DESCENDING)],
             name="idx_conversation_id_created_at"
-        )
+        ),
     ]
 
 
@@ -118,7 +105,7 @@ def persona_indexes() -> list[IndexModel]:
         IndexModel(
             [("created_at", DESCENDING)],
             name="idx_created_at_desc"
-        )
+        ),
     ]
 
 
@@ -132,7 +119,7 @@ def workflow_indexes() -> list[IndexModel]:
         IndexModel(
             [("conversation_item_id", ASCENDING), ("created_at", DESCENDING)],
             name="idx_conversation_item_id_created_at"
-        )
+        ),
     ]
 
 
@@ -146,5 +133,5 @@ def workflow_step_indexes() -> list[IndexModel]:
         IndexModel(
             [("workflow_id", ASCENDING), ("created_at", DESCENDING)],
             name="idx_workflow_id_created_at"
-        )
+        ),
     ]

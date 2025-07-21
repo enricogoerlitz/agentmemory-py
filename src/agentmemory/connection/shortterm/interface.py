@@ -1,16 +1,20 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional, Union, List
 
 
 class ShorttermMemoryInterface(ABC):
     @abstractmethod
-    def get(self, key: str) -> Any | None: pass
+    def get(self, key: str) -> Optional[Any]:
+        pass
 
     @abstractmethod
-    def set(self, key: str, value: Any, ex: int) -> None: pass
+    def set(self, key: str, value: Any, ex: int) -> None:
+        pass
 
     @abstractmethod
-    def clear(self, pattern: str | list[str]) -> None: pass
+    def clear(self, pattern: Union[str, List[str]]) -> None:
+        pass
 
     @abstractmethod
-    def keys(self, pattern: str) -> list[str]: pass
+    def keys(self, pattern: str) -> List[str]:
+        pass

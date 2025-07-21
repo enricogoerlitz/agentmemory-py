@@ -2,11 +2,6 @@ name: CI
 
 on:
   push:
-    branches: 
-      - dev
-      - test
-      - main
-      - release
   pull_request:
 
 jobs:

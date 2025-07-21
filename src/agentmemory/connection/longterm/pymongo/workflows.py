@@ -1,17 +1,21 @@
 from typing import List
 from bson import ObjectId
-
 from pymongo.database import Database
 
 from agentmemory.connection.longterm.interface import (
     LongtermMemoryWorkflowsSchemaInterface,
-    LongtermMemoryWorkflowStepsSchemaInterface
+    LongtermMemoryWorkflowStepsSchemaInterface,
 )
-from agentmemory.exc.errors import ObjectNotUpdatedError, ObjectNotFoundError
-from agentmemory.connection.longterm.collections import WORKFLOWS, WORKFLOW_STEPS
+from agentmemory.exc.errors import (
+    ObjectNotUpdatedError,
+    ObjectNotFoundError,
+)
+from agentmemory.connection.longterm.collections import (
+    WORKFLOWS,
+    WORKFLOW_STEPS,
+)
 from agentmemory.schema.workflows import Workflow, WorkflowStep
 from agentmemory.utils.validation.utils import is_valid_limit
-
 
 WORKFLOW_ID = "workflow_id"
 STEP_ID = "step_id"
@@ -35,7 +39,12 @@ class MongoDBWorkflowsSchema(LongtermMemoryWorkflowsSchemaInterface):
             cursor = cursor.limit(limit)
         return [Workflow(**doc) for doc in cursor][::-1]
 
-    def list_by_conversation_item_id(self, conversation_item_id: str, query: dict = None, limit: int = None) -> List[Workflow]:
+    def list_by_conversation_item_id(
+        self,
+        conversation_item_id: str,
+        query: dict = None,
+        limit: int = None,
+    ) -> List[Workflow]:
         query = query or {}
         query["conversation_item_id"] = conversation_item_id
         return self.list(query, limit)
@@ -50,9 +59,8 @@ class MongoDBWorkflowsSchema(LongtermMemoryWorkflowsSchemaInterface):
     def update(self, workflow_id: str, update_data: dict) -> None:
         res = self._col.update_one(
             {WORKFLOW_ID: workflow_id},
-            {"$set": update_data}
+            {"$set": update_data},
         )
-
         if res.modified_count == 0:
             raise ObjectNotUpdatedError(WORKFLOWS, workflow_id)
 
@@ -68,7 +76,10 @@ class MongoDBWorkflowStepsSchema(LongtermMemoryWorkflowStepsSchemaInterface):
         self._col = db[WORKFLOW_STEPS]
 
     def get(self, workflow_id: str, step_id: str) -> WorkflowStep:
-        data = self._col.find_one({WORKFLOW_ID: workflow_id, STEP_ID: step_id})
+        data = self._col.find_one({
+            WORKFLOW_ID: workflow_id,
+            STEP_ID: step_id,
+        })
         if not data:
             raise ObjectNotFoundError(WORKFLOW_STEPS, (workflow_id, step_id))
         return WorkflowStep(**data)
@@ -80,7 +91,12 @@ class MongoDBWorkflowStepsSchema(LongtermMemoryWorkflowStepsSchemaInterface):
             cursor = cursor.limit(limit)
         return [WorkflowStep(**doc) for doc in cursor][::-1]
 
-    def list_by_workflow_id(self, workflow_id: str, query: dict = None, limit: int = None) -> List[WorkflowStep]:
+    def list_by_workflow_id(
+        self,
+        workflow_id: str,
+        query: dict = None,
+        limit: int = None,
+    ) -> List[WorkflowStep]:
         query = query or {}
         query[WORKFLOW_ID] = workflow_id
         return self.list(query, limit)
@@ -92,14 +108,21 @@ class MongoDBWorkflowStepsSchema(LongtermMemoryWorkflowStepsSchemaInterface):
         step._id = str(res.inserted_id)
         return WorkflowStep(**step.to_dict())
 
-    def update(self, workflow_id: str, step_id: str, update_data: dict) -> None:
+    def update(
+        self,
+        workflow_id: str,
+        step_id: str,
+        update_data: dict,
+    ) -> None:
         res = self._col.update_one(
             {WORKFLOW_ID: workflow_id, STEP_ID: step_id},
-            {"$set": update_data}
+            {"$set": update_data},
         )
-
         if res.modified_count == 0:
             raise ObjectNotUpdatedError(WORKFLOW_STEPS, (workflow_id, step_id))
 
     def delete(self, workflow_id: str, step_id: str) -> None:
-        self._col.delete_one({WORKFLOW_ID: workflow_id, STEP_ID: step_id})
+        self._col.delete_one({
+            WORKFLOW_ID: workflow_id,
+            STEP_ID: step_id,
+        })

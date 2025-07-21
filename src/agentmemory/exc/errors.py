@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Union, Tuple
 
 
 class AgentMemoryError(Exception):
@@ -7,35 +7,50 @@ class AgentMemoryError(Exception):
 
 
 class ObjectNotFoundError(AgentMemoryError):
-    def __init__(self, collection: str, id: str | tuple[str]):
-        id = str(id)
-        msg = f"Object with ID '{id}' not found in collection '{collection}'."
+    def __init__(self, collection: str, id: Union[str, Tuple[str]]):
+        obj_id = str(id)
+        msg = (
+            f"Object with ID '{obj_id}' not found in "
+            f"collection '{collection}'."
+        )
         super().__init__(msg)
 
 
 class ObjectNotUpdatedError(AgentMemoryError):
-    def __init__(self, collection: str, id: str | tuple[str]):
-        id = str(id)
-        msg = f"Object with ID '{id}' in collection '{collection}' could not be updated."
+    def __init__(self, collection: str, id: Union[str, Tuple[str]]):
+        obj_id = str(id)
+        msg = (
+            f"Object with ID '{obj_id}' in collection "
+            f"'{collection}' could not be updated."
+        )
         super().__init__(msg)
 
 
 class ObjectNotDeletedError(AgentMemoryError):
-    def __init__(self, collection: str, id: str | tuple[str], e: Exception):
-        id = str(id)
-        msg = f"Object with ID '{id}' in collection '{collection}' could not be deleted because: {e}."
+    def __init__(
+        self, collection: str, id: Union[str, Tuple[str]], e: Exception
+    ):
+        obj_id = str(id)
+        msg = (
+            f"Object with ID '{obj_id}' in collection "
+            f"'{collection}' could not be deleted because: {e}."
+        )
         super().__init__(msg)
 
 
 class ObjectNotCreatedError(AgentMemoryError):
     def __init__(self, msg: str = None, e: Exception = None):
-        msg = msg or f"Object could not be created because: {e}"
-        super().__init__(msg)
+        final_msg = msg or f"Object could not be created because: {e}"
+        super().__init__(final_msg)
 
 
 class InstanceTypeError(AgentMemoryError):
     def __init__(self, obj: object, cls: Type):
-        obj_name = str(type(obj))
-        cls_name = str(type(cls))
-        msg = f"Unexpected type: Given is a object of type '{obj_name}', but expected is a object of type '{cls_name}'"
+        obj_name = type(obj).__name__
+        cls_name = cls.__name__ if hasattr(cls, "__name__") else str(cls)
+        msg = (
+            f"Unexpected type: Given is an object of type "
+            f"'{obj_name}', but expected is an object of type "
+            f"'{cls_name}'."
+        )
         super().__init__(msg)

@@ -1,16 +1,17 @@
-from typing import List
+from typing import List, Optional
 from bson import ObjectId
-
 from pymongo.database import Database
 
-from agentmemory.exc.errors import ObjectNotUpdatedError, ObjectNotFoundError
+from agentmemory.exc.errors import (
+    ObjectNotUpdatedError,
+    ObjectNotFoundError,
+)
 from agentmemory.connection.longterm.interface import (
-    LongtermMemoryPersonasSchemaInterface
+    LongtermMemoryPersonasSchemaInterface,
 )
 from agentmemory.connection.longterm.collections import PERSONAS
 from agentmemory.schema.personas import Persona
 from agentmemory.utils.validation.utils import is_valid_limit
-
 
 PERSONA_ID = "persona_id"
 
@@ -32,12 +33,17 @@ class MongoDBPersonasSchema(LongtermMemoryPersonasSchemaInterface):
             raise ObjectNotFoundError(PERSONAS, name)
         return Persona(**data)
 
-    def list(self, query: dict = None, limit: int = None) -> List[Persona]:
+    def list(
+        self,
+        query: Optional[dict] = None,
+        limit: Optional[int] = None
+    ) -> List[Persona]:
         query = query or {}
         cursor = self._col.find(query).sort("created_at", -1)
         if is_valid_limit(limit):
             cursor = cursor.limit(limit)
-        return [Persona(**doc) for doc in cursor][::-1]
+        personas = [Persona(**doc) for doc in cursor]
+        return personas[::-1]
 
     def create(self, persona: Persona) -> Persona:
         persona._id = ObjectId()
@@ -51,7 +57,6 @@ class MongoDBPersonasSchema(LongtermMemoryPersonasSchemaInterface):
             {PERSONA_ID: persona_id},
             {"$set": update_data}
         )
-
         if res.modified_count == 0:
             raise ObjectNotUpdatedError(PERSONAS, persona_id)
 

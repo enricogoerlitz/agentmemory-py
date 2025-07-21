@@ -1,18 +1,16 @@
-
 import json
-
-from typing import Any
+from typing import Any, Union, List
 from redis.client import Redis
 from agentmemory.connection.shortterm.interface import ShorttermMemoryInterface
 
 
 class RedisConnection(ShorttermMemoryInterface):
     def __init__(
-            self,
-            host: str,
-            port: str = "6379",
-            db: int = 0,
-            password: str = None
+        self,
+        host: str,
+        port: str = "6379",
+        db: int = 0,
+        password: str = None
     ):
         self._client = Redis(
             host=host,
@@ -21,24 +19,21 @@ class RedisConnection(ShorttermMemoryInterface):
             password=password
         )
 
-    def get(self, key: str) -> Any | None:
+    def get(self, key: str) -> Union[Any, None]:
         value_str = self._client.get(key)
         if value_str is None:
             return None
-
         value = json.loads(value_str)
         print("FROM CACHE:", value)
         return value
 
     def set(self, key: str, value: dict, ex: int) -> None:
         value_str = json.dumps(value)
-        return self._client.set(key, value_str, ex=ex)
+        self._client.set(key, value_str, ex=ex)
 
-    def clear(self, pattern: str | list[str]) -> None:
-        if isinstance(pattern, str):
-            pattern = [pattern]
-
-        if len(pattern) == 0:
+    def clear(self, pattern: Union[str, List[str]]) -> None:
+        patterns = [pattern] if isinstance(pattern, str) else pattern
+        if not patterns:
             return
 
         seen_keys = set()
@@ -46,7 +41,7 @@ class RedisConnection(ShorttermMemoryInterface):
         batch_size = 1000
         batch_count = 0
 
-        for p in pattern:
+        for p in patterns:
             for key in self._client.scan_iter(match=p, count=batch_size):
                 if key not in seen_keys:
                     seen_keys.add(key)
@@ -59,9 +54,11 @@ class RedisConnection(ShorttermMemoryInterface):
         if batch_count > 0:
             pipe.execute()
 
-        if len(list(seen_keys)) > 0:
-            print("CLEAR KEYS:", list(seen_keys), len(pattern))
+        if seen_keys:
+            print("CLEAR KEYS:", list(seen_keys), len(patterns))
 
-    def keys(self, pattern: str) -> list[str]:
-        return [key.decode("utf-8") if isinstance(key, bytes) else key
-                for key in self._client.scan_iter(match=pattern)]
+    def keys(self, pattern: str) -> List[str]:
+        return [
+            key.decode("utf-8") if isinstance(key, bytes) else key
+            for key in self._client.scan_iter(match=pattern)
+        ]
