@@ -1,10 +1,6 @@
 name: release
 
 on:
-  workflow_run:
-    workflows: ["ci"]
-    types:
-      - completed
   push:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
@@ -18,28 +14,7 @@ env:
   # TAP_NAME: "<TAP_NAME>"
 
 jobs:
-  gatekeeper:
-    runs-on: ubuntu-latest
-    outputs:
-      proceed: ${{ steps.check.outputs.proceed }}
-    steps:
-      - name: Check triggering condition
-        id: check
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
-              echo "proceed=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "CI failed — exiting"
-              echo "proceed=false" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "Triggered by push — proceeding"
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-
   details:
-    needs: gatekeeper
-    if: ${{ needs.gatekeeper.outputs.proceed == 'true' }}
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.release.outputs.new_version }}
@@ -67,8 +42,7 @@ jobs:
           fi
 
   check_pypi:
-    needs: [gatekeeper, details]
-    if: ${{ needs.gatekeeper.outputs.proceed == 'true' }}
+    needs: [details]
     runs-on: ubuntu-latest
     steps:
       - name: Fetch information from PyPI
@@ -94,8 +68,7 @@ jobs:
           fi
 
   setup_and_build:
-    needs: [gatekeeper, details, check_pypi]
-    if: ${{ needs.gatekeeper.outputs.proceed == 'true' }}
+    needs: [details, check_pypi]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -129,8 +102,7 @@ jobs:
 
   pypi_publish:
     name: Upload release to PyPI
-    needs: [gatekeeper, setup_and_build, details]
-    if: ${{ needs.gatekeeper.outputs.proceed == 'true' }}
+    needs: [setup_and_build, details]
     runs-on: ubuntu-latest
     environment:
       name: release
@@ -148,8 +120,7 @@ jobs:
 
   github_release:
     name: Create GitHub Release
-    needs: [gatekeeper, setup_and_build, details]
-    if: ${{ needs.gatekeeper.outputs.proceed == 'true' }}
+    needs: [setup_and_build, details]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -171,27 +142,3 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create ${{ needs.details.outputs.tag_name }} dist/* --title ${{ needs.details.outputs.tag_name }} --generate-notes
-
-  # bump_homebrew_formula:
-  #   name: Dispatch event to Repo B
-  #   needs: [details, github_release, pypi_publish]
-  #   runs-on: ubuntu-latest
-  #   environment:
-  #     name: release
-  #   steps:
-  #     - name: Dispatch Repository Dispatch event
-  #       uses: peter-evans/repository-dispatch@v2
-  #       with:
-  #         token: ${{ secrets.BREW_TAP_TOKEN }}
-  #         repository: ${{ env.OWNER }}/{{ env.TAP_NAME }}
-  #         event-type: "update-formula"
-  #         client-payload: |-
-  #           { 
-  #             "formula_version": "${{env.FORMULA_VERSION}}", 
-  #             "formula_url": "${{ env.FORMULA_URL }}", 
-  #             "formula_name": "${{ env.FORMULA_NAME }}"
-  #           }
-  #       env:
-  #         FORMULA_VERSION: ${{ needs.details.outputs.new_version }}
-  #         FORMULA_NAME: ${{ env.PACKAGE_NAME }}
-  #         FORMULA_URL: https://github.com/${{env.OWNER}}/${{env.PACKAGE_NAME}}/releases/download/${{ needs.details.outputs.new_version }}/${{env.PACKAGE_NAME}}-${{ needs.details.outputs.new_version }}.tar.gz
