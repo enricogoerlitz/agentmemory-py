@@ -101,7 +101,11 @@ from agentmemory.schema.conversations import ConversationItem
 
 item = ConversationItem(
     conversation_id="<CONVERSATION_ID>",
-    content="Hello, how can I help?"
+    role="system",
+    content="Hello, how can I help?",
+    data={
+        "custom": "data"
+    }
 )
 
 created_item = memory.conversation_items.create(item)
@@ -118,34 +122,53 @@ items = memory.conversation_items.list_by_conversation_id("<CONVERSATION_ID>")
 from agentmemory.schema.personas import Persona
 
 persona = Persona(
-    name="SupportAgent",
-    description="Helps users with support requests."
+    name="<NAME>",
+    role="<ROLE>",
+    goals="<GOALS>",
+    background="<BACKGROUND>",
+    data={
+        "custom": "data"
+    }
 )
 
 created_persona = memory.personas.create(persona)
 print(created_persona)
 
 # Retrieve persona by name
-persona = memory.personas.get_by_name("SupportAgent")
+persona = memory.personas.get_by_name("<NAME>")
 ```
 
 
 ## Manage Workflows and WorkflowSteps
 
 ```python
-from agentmemory.schema.workflows import Workflow, WorkflowStep
+from agentmemory.schema.workflows import Workflow, WorkflowStep, WorkflowStatus
 
 workflow = Workflow(
-    name="Support Workflow",
-    description="Handles support tickets."
+    conversation_item_id="<CONVERSATION_ITEM_ID>",
+    user_query="<USER_QUERY>",
+    status=WorkflowStatus.RUNNING,
+    data={
+        "custom": "data"
+    }
 )
 
 created_workflow = memory.workflows.create(workflow)
 print(created_workflow)
 
 step = WorkflowStep(
-    workflow_id=created_workflow.id,
-    name="Check Ticket"
+    workflow_id=created_workflow.workflow_id,
+    name="<NAME>",
+    tool="<TOOL_NAME>",
+    arguments={
+        "arg1": "value1"
+    },
+    status=WorkflowStatus.SUCCESS,
+    result="<RESULT>",
+    logs=[],
+    data={
+        "custom": "data"
+    }
 )
 
 created_step = memory.workflow_steps.create(step)
@@ -158,10 +181,10 @@ print(created_step)
 The integrated cache system enables fast access to frequently used data.
 
 ```python
-memory.cache.keys("*")              # List all keys
-memory.cache.get("<KEY>")           # Get value
-memory.cache.set("<KEY>", "value")  # Set value
-memory.cache.clear("<PATTERN>")     # Clear cache by pattern
+memory.cache.keys("*")                       # List all keys
+memory.cache.get("<KEY>")                    # Get value
+memory.cache.set("<KEY>", {"key": "value"})  # Set value
+memory.cache.clear("<PATTERN>")              # Clear cache by pattern
 ```
 
 ## Tests
