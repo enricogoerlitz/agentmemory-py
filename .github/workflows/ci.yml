@@ -28,17 +28,19 @@ jobs:
       - name: Start Docker Compose
         run: docker compose -f docker/local/docker-compose.yml up -d
 
-      - name: Wait for MongoDB and Redis to be ready
+      - name: Wait for MongoDB and Redis to be ready (max 60s)
         run: |
-          until docker exec agentmemory-redis redis-cli ping | grep -q PONG; do
-            echo "Waiting for Redis..."
-            sleep 1
-          done
+          timeout 60 bash -c '
+            until docker exec agentmemory-redis redis-cli ping | grep -q PONG; do
+              echo "Waiting for Redis..."
+              sleep 1
+            done
 
-          until docker exec agentmemory-mongodb mongosh --eval 'db.runCommand({ ping: 1 })'; do
-            echo "Waiting for MongoDB..."
-            sleep 1
-          done
+            until docker exec agentmemory-mongodb mongosh --eval "db.runCommand({ ping: 1 })" | grep '"ok" : 1'; do
+              echo "Waiting for MongoDB..."
+              sleep 1
+            done
+          '
 
       - name: Run tests
         run: uv run pytest
