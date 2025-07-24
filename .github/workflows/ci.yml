@@ -29,6 +29,7 @@ jobs:
         run: docker compose -f docker/local/docker-compose.yml up -d
 
       - name: Wait for MongoDB and Redis to be ready
+        timeout-minutes: 1
         run: |
           until docker exec agentmemory-redis redis-cli ping | grep -q PONG; do
             echo "Waiting for Redis..."
